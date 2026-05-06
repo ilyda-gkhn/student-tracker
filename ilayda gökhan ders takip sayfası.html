@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Öğrenci Ders Takip Sistemi</title>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#704e9c',
+            'primary-container': '#cda7fd',
+            secondary: '#476800',
+            'secondary-container': '#c0f36c',
+            background: '#fff7ff',
+            surface: '#fff7ff',
+            'surface-container-low': '#f9f1f9',
+            'surface-container': '#f3ecf3',
+            'on-surface': '#1d1a20',
+            'on-surface-variant': '#4a4450',
+            error: '#ba1a1a',
+            'error-container': '#ffdad6'
+          },
+          fontFamily: {
+            lexend: ['Lexend', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Lexend', sans-serif;
+      background-color: #fff7ff;
+      color: #1d1a20;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .menu-link.active {
+      background-color: #faf5ff;
+      color: #704e9c;
+      font-weight: 700;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.76);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(243, 232, 255, 1);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(120px, 1fr));
+    }
+
+
+
+    .managed-item {
+      position: relative;
+    }
+
+    .item-more-btn {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      display: none;
+      height: 32px;
+      width: 32px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      background: white;
+      color: #704e9c;
+      box-shadow: 0 8px 24px rgba(112, 78, 156, 0.16);
+      border: 1px solid #f3e8ff;
+      z-index: 20;
+    }
+
+    .managed-item:hover .item-more-btn,
+    .managed-item.menu-open .item-more-btn {
+      display: flex;
+    }
+
+    .item-action-menu {
+      position: absolute;
+      right: 12px;
+      top: 48px;
+      display: none;
+      min-width: 136px;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid #f3e8ff;
+      background: white;
+      box-shadow: 0 18px 40px rgba(112, 78, 156, 0.18);
+      z-index: 30;
+    }
+
+    .managed-item.menu-open .item-action-menu {
+      display: block;
+    }
+
+    .item-action-menu button {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 13px;
+      color: #4a4450;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .item-action-menu button:hover {
+      background: #faf5ff;
+      color: #704e9c;
+    }
+
+    .item-action-menu button.delete-action:hover {
+      background: #fff1f2;
+      color: #ba1a1a;
+    }
+
+    @media (max-width: 900px) {
+      aside {
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      header {
+        position: static !important;
+        left: 0 !important;
+      }
+
+      .content-shell {
+        margin-left: 0 !important;
+      }
+
+      .calendar-grid {
+        grid-template-columns: repeat(7, 160px);
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-background">
+  <aside class="fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r border-purple-100 bg-white p-4 shadow-sm">
+    <div class="mb-10 flex items-center gap-3 px-2">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-container text-primary">
+        <span class="material-symbols-outlined">school</span>
+      </div>
+      <div>
+        <h1 class="text-lg font-black text-purple-500 leading-tight">Academic Zen</h1>
+        <p class="text-xs text-slate-500">Student Portal</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 space-y-2">
+      <button class="menu-link active flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-slate-600 transition-all hover:bg-purple-50 hover:text-purple-600" data-page="dersler">
+        <span class="material-symbols-outlined">school</span>
+        <span>Dersler</span>
+      </button>
+
+      <button class="menu-link flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-slate-600 transition-all hover:bg-purple-50 hover:text-purple-600" data-page="sinavlar">
+        <span class="material-symbols-outlined">assignment</span>
+        <span>Sınavlar</span>
+      </button>
+
+      <button class="menu-link flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-slate-600 transition-all hover:bg-purple-50 hover:text-purple-600" data-page="program">
+        <span class="material-symbols-outlined">event_note</span>
+        <span>Program</span>
+      </button>
+
+      <button class="menu-link flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-slate-600 transition-all hover:bg-purple-50 hover:text-purple-600" data-page="takvim">
+        <span class="material-symbols-outlined">calendar_today</span>
+        <span>Takvim</span>
+      </button>
+    </nav>
+
+    <div class="mt-auto space-y-2 border-t border-purple-50 pt-6"></div>
+  </aside>
+
+  <div class="content-shell ml-64 min-h-screen">
+    <header class="fixed left-64 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-purple-100 bg-white/80 px-8 shadow-sm shadow-purple-500/10 backdrop-blur-md">
+      <div class="relative w-full max-w-md">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+        <input id="globalSearch" class="w-full rounded-full border-transparent bg-surface-container-low py-2 pl-10 pr-4 text-sm focus:border-primary focus:ring-0" placeholder="Ders, sınav veya etkinlik ara..." type="text" autocomplete="off" />
+        <div id="searchResults" class="absolute left-0 right-0 top-12 z-[80] hidden max-h-96 overflow-y-auto rounded-2xl border border-purple-100 bg-white p-2 shadow-2xl shadow-purple-900/15"></div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <button id="settingsButton" class="rounded-full p-2 text-slate-500 transition-colors hover:bg-purple-50" type="button" aria-label="Ayarlar">
+            <span class="material-symbols-outlined">settings</span>
+          </button>
+
+          <div id="settingsMenu" class="absolute right-0 top-11 hidden w-44 overflow-hidden rounded-xl border border-purple-100 bg-white shadow-xl shadow-purple-500/10">
+            <button id="openAccountEdit" class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-slate-700 hover:bg-purple-50 hover:text-primary" type="button">
+              <span class="material-symbols-outlined text-base">manage_accounts</span>
+              Hesap Düzenle
+            </button>
+          </div>
+        </div>
+
+        <div class="h-8 w-px bg-purple-100"></div>
+
+        <div class="flex items-center gap-3">
+          <div class="text-right leading-tight">
+            <p id="profileName" class="text-sm font-bold text-on-surface">İlayda Gökhan</p>
+            <p id="profileFaculty" class="text-xs text-slate-500">İdari ve İktisadi Bilimler Fakültesi</p>
+          </div>
+          <div id="profileAvatar" class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary-container bg-primary text-sm font-bold text-white">
+            İG
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="px-8 pb-12 pt-24">
+      <section id="dersler" class="page active">
+        <div class="mb-8 flex items-end justify-between">
+          <div>
+            <h2 class="text-4xl font-black text-on-surface">Ders Takibi</h2>
+            <p class="mt-2 text-lg text-on-surface-variant">Derslerini ekle, takip et ve tamamladıklarını işaretle.</p>
+          </div>
+          <button id="showCompletedCourses" class="flex items-center gap-2 rounded-xl bg-secondary-container px-5 py-3 shadow-sm transition hover:scale-[1.02] active:scale-[0.98]" type="button">
+            <span class="material-symbols-outlined text-secondary">check_circle</span>
+            <span id="completedCourseCount" class="font-bold text-secondary">0 Tamamlandı</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+          <div class="col-span-12 lg:col-span-4">
+            <div class="rounded-xl border border-purple-100 bg-white p-6 shadow-md shadow-purple-500/5">
+              <div class="mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">add_circle</span>
+                <h3 class="text-2xl font-bold">Yeni Ders Ekle</h3>
+              </div>
+
+              <form id="courseForm" class="space-y-4">
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600">Ders Adı</label>
+                  <input id="courseName" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" placeholder="Örn: Veri Tabanı Yönetimi" type="text" />
+                </div>
+
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600">Öğretmen Adı</label>
+                  <input id="teacherName" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" placeholder="Örn: Doç. Dr. Ayşe Yılmaz" type="text" />
+                </div>
+
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600">Gün / Saat</label>
+                  <input id="courseTime" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" placeholder="Örn: Pazartesi 09:00" type="text" />
+                </div>
+
+                <button class="w-full rounded-lg bg-primary py-3 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:opacity-90 active:scale-[0.98]" type="submit">
+                  Kaydet
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="col-span-12 space-y-4 lg:col-span-8">
+            <div class="flex items-center justify-between px-1">
+              <h3 id="courseSectionTitle" class="text-2xl font-bold">Aktif Derslerim</h3>
+              <button id="showActiveCourses" class="hidden text-sm font-semibold text-primary hover:underline" type="button">Ders Takibine Dön</button>
+            </div>
+
+            <div id="courseList" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="glass-card rounded-xl p-6 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10">
+                <div class="mb-4 flex items-start justify-between">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container text-primary">
+                    <span class="material-symbols-outlined">code</span>
+                  </div>
+                  <input class="h-6 w-6 rounded border-purple-200 text-primary focus:ring-primary" type="checkbox" />
+                </div>
+                <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-primary">YBS301</span>
+                <h4 class="mt-3 text-lg font-bold">Veri Tabanı Sistemleri</h4>
+                <p class="text-sm text-slate-500">Doç. Dr. Selim Kaya</p>
+                <div class="mt-4 flex items-center gap-2 border-t border-purple-50 pt-4 text-sm text-slate-500">
+                  <span class="material-symbols-outlined text-base">calendar_month</span>
+                  <span>Salı, 10:30</span>
+                </div>
+              </div>
+
+              <div class="glass-card rounded-xl p-6 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10">
+                <div class="mb-4 flex items-start justify-between">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary-container text-secondary">
+                    <span class="material-symbols-outlined">analytics</span>
+                  </div>
+                  <input class="h-6 w-6 rounded border-purple-200 text-primary focus:ring-primary" type="checkbox" />
+                </div>
+                <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-primary">YBS305</span>
+                <h4 class="mt-3 text-lg font-bold">Büyük Veri ve İş Analitiği</h4>
+                <p class="text-sm text-slate-500">Prof. Dr. Mehmet Demir</p>
+                <div class="mt-4 flex items-center gap-2 border-t border-purple-50 pt-4 text-sm text-slate-500">
+                  <span class="material-symbols-outlined text-base">calendar_month</span>
+                  <span>Çarşamba, 14:00</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="completedCourseList" class="hidden grid grid-cols-1 gap-4 md:grid-cols-2"></div>
+            <p id="completedEmptyMessage" class="hidden rounded-xl border border-dashed border-purple-200 bg-white p-6 text-center text-sm text-slate-500">Henüz tamamlanan ders yok.</p>
+
+            <div class="rounded-xl bg-primary p-6 text-white shadow-lg shadow-primary/20">
+              <p class="text-sm opacity-80">İlerleme</p>
+              <h4 id="courseProgressTitle" class="mt-1 text-2xl font-bold">Ders tamamlama durumu</h4>
+              <div class="mt-4 flex items-center gap-4">
+                <div class="h-2 flex-1 overflow-hidden rounded-full bg-white/20">
+                  <div id="courseProgressBar" class="h-full rounded-full bg-secondary-container transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <span id="courseProgressPercent" class="text-sm font-bold">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sinavlar" class="page">
+        <div class="mb-8">
+          <h2 class="text-4xl font-black text-on-surface">Sınav Takvimi</h2>
+          <p class="mt-2 text-slate-500">Yaklaşan sınavlarını takip et ve çalışma planını organize et.</p>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+          <div class="col-span-12 lg:col-span-4">
+            <div class="sticky top-24 rounded-xl border border-purple-100 bg-white p-6 shadow-sm shadow-purple-500/5">
+              <div class="mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">add_circle</span>
+                <h3 class="text-2xl font-bold">Sınav Ekle</h3>
+              </div>
+
+              <form id="examForm" class="space-y-4">
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600">Ders Seçimi</label>
+                  <input id="examLesson" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" placeholder="Örn: Finansal Yönetim II" type="text" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="mb-1 block text-sm text-slate-600">Sınav Tarihi</label>
+                    <input id="examDate" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" type="date" />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-sm text-slate-600">Saat</label>
+                    <input id="examTime" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" type="time" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="mb-1 block text-sm text-slate-600">Açıklama</label>
+                  <textarea id="examNote" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" rows="3" placeholder="Örn: 1-5. üniteler dahil"></textarea>
+                </div>
+
+                <button class="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 font-bold text-white shadow-md shadow-purple-500/30 transition-all active:scale-[0.98]" type="submit">
+                  <span class="material-symbols-outlined">event_available</span>
+                  Takvime Ekle
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="col-span-12 space-y-4 lg:col-span-8">
+            <div id="examList" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="relative overflow-hidden rounded-xl border-2 border-red-100 bg-white p-6 shadow-lg shadow-red-500/5">
+                <div class="absolute right-4 top-4 rounded-full bg-error px-3 py-1 text-xs font-bold uppercase text-white">Acil</div>
+                <div class="mb-6 flex items-start gap-4">
+                  <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-red-50 text-error">
+                    <span class="material-symbols-outlined text-3xl">database</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xl font-bold">Veri Tabanı Sistemleri</h4>
+                    <p class="text-sm text-slate-500">Vize Sınavı</p>
+                  </div>
+                </div>
+                <div class="space-y-2 text-sm text-slate-600">
+                  <p class="flex items-center gap-2"><span class="material-symbols-outlined text-base">calendar_month</span>15 Mayıs 2026</p>
+                  <p class="flex items-center gap-2"><span class="material-symbols-outlined text-base">schedule</span>09:30 - Derslik B-204</p>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-purple-100 bg-white p-6 shadow-sm shadow-purple-500/5">
+                <div class="mb-6 flex items-start gap-4">
+                  <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-purple-50 text-primary">
+                    <span class="material-symbols-outlined text-3xl">monitoring</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xl font-bold">Büyük Veri ve İş Analitiği</h4>
+                    <p class="text-sm text-slate-500">Final Sınavı</p>
+                  </div>
+                </div>
+                <div class="space-y-2 text-sm text-slate-600">
+                  <p class="flex items-center gap-2"><span class="material-symbols-outlined text-base">calendar_month</span>28 Mayıs 2026</p>
+                  <p class="flex items-center gap-2"><span class="material-symbols-outlined text-base">schedule</span>13:00 - Amfi 3</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="program" class="page">
+        <div class="mb-8 flex items-end justify-between">
+          <div>
+            <span class="mb-2 block text-xs font-bold uppercase tracking-widest text-purple-600">Akademik Planlayıcı</span>
+            <h2 class="text-4xl font-black text-on-surface">Haftalık Çalışma Programı</h2>
+          </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 items-start gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <section class="day-card rounded-xl border border-purple-50 bg-white shadow-sm" data-day="Pazartesi">
+            <div class="border-b border-purple-50 bg-primary-container/20 p-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-2xl font-bold text-primary">Pazartesi</h3>
+                <span class="rounded bg-purple-100 px-2 py-1 text-xs font-bold text-primary">3 Görev</span>
+              </div>
+            </div>
+            <div class="space-y-4 p-4">
+              <form class="program-form space-y-2 rounded-lg border border-dashed border-purple-200 bg-surface-container-low p-3">
+                <input class="program-title w-full rounded-lg border-purple-100 text-sm focus:border-primary focus:ring-primary/20" placeholder="Ders/Etkinlik adı" type="text" />
+                <div class="flex gap-2">
+                  <input class="program-hour w-1/3 rounded-lg border-purple-100 text-sm focus:border-primary focus:ring-primary/20" placeholder="Saat" type="text" />
+                  <input class="program-desc w-2/3 rounded-lg border-purple-100 text-sm focus:border-primary focus:ring-primary/20" placeholder="Açıklama" type="text" />
+                </div>
+                <button class="flex w-full items-center justify-center gap-1 rounded-lg bg-primary py-2 text-xs font-bold text-white" type="submit"><span class="material-symbols-outlined text-sm">add</span>Ekle</button>
+              </form>
+              <ul class="program-list space-y-2">
+                <li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input checked class="mt-1 rounded border-purple-300 text-secondary focus:ring-secondary" type="checkbox" /><div><p class="text-sm font-bold text-secondary line-through">Veri Tabanı Tekrarı</p><p class="text-xs text-slate-500">09:30 • Normalizasyon</p></div></li>
+                <li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input class="mt-1 rounded border-purple-300 text-secondary focus:ring-secondary" type="checkbox" /><div><p class="text-sm font-bold">Yöneylem Araştırması</p><p class="text-xs text-slate-500">14:00 • Simplex yöntemi</p></div></li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="day-card rounded-xl border border-purple-50 bg-white shadow-sm" data-day="Salı">
+            <div class="border-b border-purple-50 bg-primary-container/20 p-4"><h3 class="text-2xl font-bold text-primary">Salı</h3></div>
+            <div class="space-y-4 p-4">
+              <form class="program-form space-y-2 rounded-lg border border-dashed border-purple-200 bg-surface-container-low p-3"><input class="program-title w-full rounded-lg border-purple-100 text-sm" placeholder="Ders/Etkinlik adı" type="text" /><div class="flex gap-2"><input class="program-hour w-1/3 rounded-lg border-purple-100 text-sm" placeholder="Saat" type="text" /><input class="program-desc w-2/3 rounded-lg border-purple-100 text-sm" placeholder="Açıklama" type="text" /></div><button class="w-full rounded-lg bg-primary py-2 text-xs font-bold text-white" type="submit">Ekle</button></form>
+              <ul class="program-list space-y-2"><li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input class="mt-1 rounded border-purple-300 text-secondary" type="checkbox" /><div><p class="text-sm font-bold">İş Uygulamaları</p><p class="text-xs text-slate-500">10:00 • Scrum / Kanban</p></div></li></ul>
+            </div>
+          </section>
+
+          <section class="day-card rounded-xl border border-purple-50 bg-white shadow-sm xl:row-span-2" data-day="Çarşamba">
+            <div class="border-b border-purple-50 bg-primary/10 p-4"><h3 class="text-2xl font-bold text-primary">Çarşamba</h3></div>
+            <div class="space-y-4 p-4">
+              <form class="program-form space-y-2 rounded-lg border border-dashed border-purple-200 bg-surface-container-low p-3"><input class="program-title w-full rounded-lg border-purple-100 text-sm" placeholder="Ders/Etkinlik adı" type="text" /><div class="flex gap-2"><input class="program-hour w-1/3 rounded-lg border-purple-100 text-sm" placeholder="Saat" type="text" /><input class="program-desc w-2/3 rounded-lg border-purple-100 text-sm" placeholder="Açıklama" type="text" /></div><button class="w-full rounded-lg bg-primary py-2 text-xs font-bold text-white" type="submit">Ekle</button></form>
+              <ul class="program-list space-y-2"><li class="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50 p-3"><input class="mt-1 rounded border-error text-error" type="checkbox" /><div><p class="text-sm font-bold text-error">Finansal Yönetim II</p><p class="text-xs text-error/80">08:00 • Reeskont ve factoring</p></div></li><li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input class="mt-1 rounded border-purple-300 text-secondary" type="checkbox" /><div><p class="text-sm font-bold">Web Tasarım</p><p class="text-xs text-slate-500">11:00 • HTML/CSS/JS tekrar</p></div></li></ul>
+            </div>
+          </section>
+
+          <section class="day-card rounded-xl border border-purple-50 bg-white shadow-sm" data-day="Perşembe"><div class="border-b border-purple-50 bg-primary-container/20 p-4"><h3 class="text-2xl font-bold text-primary">Perşembe</h3></div><div class="space-y-4 p-4"><form class="program-form space-y-2 rounded-lg border border-dashed border-purple-200 bg-surface-container-low p-3"><input class="program-title w-full rounded-lg border-purple-100 text-sm" placeholder="Ders/Etkinlik adı" type="text" /><div class="flex gap-2"><input class="program-hour w-1/3 rounded-lg border-purple-100 text-sm" placeholder="Saat" type="text" /><input class="program-desc w-2/3 rounded-lg border-purple-100 text-sm" placeholder="Açıklama" type="text" /></div><button class="w-full rounded-lg bg-primary py-2 text-xs font-bold text-white" type="submit">Ekle</button></form><ul class="program-list space-y-2"><li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input class="mt-1 rounded border-purple-300 text-secondary" type="checkbox" /><div><p class="text-sm font-bold">Sistem Analizi</p><p class="text-xs text-slate-500">13:30 • Gantt ve balık kılçığı</p></div></li></ul></div></section>
+          <section class="day-card rounded-xl border border-purple-50 bg-white shadow-sm" data-day="Cuma"><div class="border-b border-purple-50 bg-primary-container/20 p-4"><h3 class="text-2xl font-bold text-primary">Cuma</h3></div><div class="space-y-4 p-4"><form class="program-form space-y-2 rounded-lg border border-dashed border-purple-200 bg-surface-container-low p-3"><input class="program-title w-full rounded-lg border-purple-100 text-sm" placeholder="Ders/Etkinlik adı" type="text" /><div class="flex gap-2"><input class="program-hour w-1/3 rounded-lg border-purple-100 text-sm" placeholder="Saat" type="text" /><input class="program-desc w-2/3 rounded-lg border-purple-100 text-sm" placeholder="Açıklama" type="text" /></div><button class="w-full rounded-lg bg-primary py-2 text-xs font-bold text-white" type="submit">Ekle</button></form><ul class="program-list space-y-2"><li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input checked class="mt-1 rounded border-purple-300 text-secondary" type="checkbox" /><div><p class="text-sm font-bold text-secondary line-through">Büyük Veri</p><p class="text-xs text-slate-500">10:00 • Hadoop / Spark</p></div></li></ul></div></section>
+          <section class="day-card rounded-xl border border-purple-50 bg-white shadow-sm" data-day="Cumartesi"><div class="border-b border-purple-50 bg-primary-container/20 p-4"><h3 class="text-2xl font-bold text-primary">Cumartesi</h3></div><div class="space-y-4 p-4"><form class="program-form space-y-2 rounded-lg border border-dashed border-purple-200 bg-surface-container-low p-3"><input class="program-title w-full rounded-lg border-purple-100 text-sm" placeholder="Ders/Etkinlik adı" type="text" /><div class="flex gap-2"><input class="program-hour w-1/3 rounded-lg border-purple-100 text-sm" placeholder="Saat" type="text" /><input class="program-desc w-2/3 rounded-lg border-purple-100 text-sm" placeholder="Açıklama" type="text" /></div><button class="w-full rounded-lg bg-primary py-2 text-xs font-bold text-white" type="submit">Ekle</button></form><ul class="program-list space-y-2"><li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input class="mt-1 rounded border-purple-300 text-secondary" type="checkbox" /><div><p class="text-sm font-bold">Python Online Kurs</p><p class="text-xs text-slate-500">11:00 • Veri analizi temelleri</p></div></li></ul></div></section>
+          <section class="day-card rounded-xl border border-purple-50 bg-white shadow-sm" data-day="Pazar"><div class="border-b border-purple-50 bg-primary-container/20 p-4"><h3 class="text-2xl font-bold text-primary">Pazar</h3></div><div class="space-y-4 p-4"><form class="program-form space-y-2 rounded-lg border border-dashed border-purple-200 bg-surface-container-low p-3"><input class="program-title w-full rounded-lg border-purple-100 text-sm" placeholder="Ders/Etkinlik adı" type="text" /><div class="flex gap-2"><input class="program-hour w-1/3 rounded-lg border-purple-100 text-sm" placeholder="Saat" type="text" /><input class="program-desc w-2/3 rounded-lg border-purple-100 text-sm" placeholder="Açıklama" type="text" /></div><button class="w-full rounded-lg bg-primary py-2 text-xs font-bold text-white" type="submit">Ekle</button></form><ul class="program-list space-y-2"><li class="flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low"><input class="mt-1 rounded border-purple-300 text-secondary" type="checkbox" /><div><p class="text-sm font-bold">Haftalık Planlama</p><p class="text-xs text-slate-500">20:00 • Gelecek haftanın hedefleri</p></div></li></ul></div></section>
+        </div>
+      </section>
+
+      <section id="takvim" class="page">
+        <div class="mb-8 flex items-center justify-between">
+          <div>
+            <h2 class="text-4xl font-black text-on-surface">Mayıs 2026</h2>
+            <p class="mt-1 text-slate-500">Bu ay ders ve sınav tarihlerin burada görünür.</p>
+          </div>
+          <div class="flex items-center rounded-xl border border-purple-100 bg-white p-1 shadow-sm">
+            <button class="rounded-lg p-2 transition-colors hover:bg-purple-50"><span class="material-symbols-outlined">chevron_left</span></button>
+            <button class="px-6 py-2 text-sm font-bold text-primary">Bugün</button>
+            <button class="rounded-lg p-2 transition-colors hover:bg-purple-50"><span class="material-symbols-outlined">chevron_right</span></button>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-purple-100 bg-white shadow-sm">
+          <div class="calendar-grid border-b border-purple-100 bg-purple-50/50">
+            <div class="py-4 text-center text-sm font-bold text-slate-500">Pazartesi</div>
+            <div class="py-4 text-center text-sm font-bold text-slate-500">Salı</div>
+            <div class="py-4 text-center text-sm font-bold text-slate-500">Çarşamba</div>
+            <div class="py-4 text-center text-sm font-bold text-slate-500">Perşembe</div>
+            <div class="py-4 text-center text-sm font-bold text-slate-500">Cuma</div>
+            <div class="py-4 text-center text-sm font-bold text-slate-500">Cumartesi</div>
+            <div class="py-4 text-center text-sm font-bold text-slate-500">Pazar</div>
+          </div>
+
+          <div class="calendar-grid">
+            <div class="h-36 border-b border-r border-purple-50 bg-slate-50/40"></div>
+            <div class="h-36 border-b border-r border-purple-50 bg-slate-50/40"></div>
+            <div class="h-36 border-b border-r border-purple-50 bg-slate-50/40"></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">1</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">2</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">3</span></div>
+            <div class="h-36 border-b border-purple-50 p-2"><span class="font-bold">4</span></div>
+
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">5</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">6</span><div class="mt-2 rounded bg-purple-100 px-2 py-1 text-xs text-primary">Veri Tabanı</div></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">7</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">8</span><div class="mt-2 rounded bg-green-100 px-2 py-1 text-xs text-secondary">İş Analitiği</div></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">9</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">10</span></div>
+            <div class="h-36 border-b border-purple-50 p-2"><span class="font-bold">11</span></div>
+
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">12</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">13</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">14</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">15</span><div class="mt-2 rounded bg-red-100 px-2 py-1 text-xs font-bold text-error">Sınav: Veri Tabanı</div></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">16</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">17</span></div>
+            <div class="h-36 border-b border-purple-50 p-2"><span class="font-bold">18</span></div>
+
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">19</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">20</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">21</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">22</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">23</span></div>
+            <div class="h-36 border-b border-r border-purple-50 p-2"><span class="font-bold">24</span></div>
+            <div class="h-36 border-b border-purple-50 p-2"><span class="font-bold">25</span></div>
+
+            <div class="h-36 border-r border-purple-50 p-2"><span class="font-bold">26</span></div>
+            <div class="h-36 border-r border-purple-50 p-2"><span class="font-bold">27</span></div>
+            <div class="h-36 border-r border-purple-50 p-2"><span class="font-bold">28</span><div class="mt-2 rounded bg-red-100 px-2 py-1 text-xs font-bold text-error">Sınav: Büyük Veri</div></div>
+            <div class="h-36 border-r border-purple-50 p-2"><span class="font-bold">29</span></div>
+            <div class="h-36 border-r border-purple-50 p-2"><span class="font-bold">30</span></div>
+            <div class="h-36 border-r border-purple-50 p-2"><span class="font-bold">31</span></div>
+            <div class="h-36 bg-slate-50/40"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+
+  <div id="accountModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/30 px-4">
+    <div class="w-full max-w-md rounded-2xl border border-purple-100 bg-white p-6 shadow-2xl shadow-purple-900/20">
+      <div class="mb-5 flex items-center justify-between">
+        <div>
+          <h3 class="text-2xl font-bold text-on-surface">Hesap Düzenle</h3>
+          <p class="text-sm text-slate-500">İsim ve fakülte bilgisini buradan değiştir.</p>
+        </div>
+        <button id="closeAccountModal" class="rounded-full p-2 text-slate-500 hover:bg-purple-50" type="button">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form id="accountForm" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-600">İsim Soyisim</label>
+          <input id="accountNameInput" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" type="text" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-600">Fakülte</label>
+          <input id="accountFacultyInput" class="w-full rounded-lg border border-purple-100 bg-surface-container-low p-3 focus:border-primary focus:ring-primary/20" type="text" />
+        </div>
+
+        <button class="w-full rounded-lg bg-primary py-3 font-bold text-white shadow-md shadow-purple-500/20 transition-all active:scale-[0.98]" type="submit">
+          Kaydet
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const menuLinks = document.querySelectorAll('.menu-link');
+    const pages = document.querySelectorAll('.page');
+
+    const globalSearchInput = document.getElementById('globalSearch');
+    const searchResultsBox = document.getElementById('searchResults');
+    let lastSearchResults = [];
+
+    function switchToPage(selectedPage) {
+      menuLinks.forEach((item) => {
+        item.classList.toggle('active', item.dataset.page === selectedPage);
+      });
+
+      pages.forEach((page) => {
+        page.classList.toggle('active', page.id === selectedPage);
+      });
+    }
+
+    menuLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        switchToPage(link.dataset.page);
+        hideSearchResults();
+      });
+    });
+
+    function escapeHTML(value) {
+      return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function closeAllMenus() {
+      document.querySelectorAll('.managed-item.menu-open').forEach((item) => {
+        item.classList.remove('menu-open');
+      });
+    }
+
+    function buildActionMenu() {
+      return `
+        <button class="item-more-btn" type="button" aria-label="İşlemler">
+          <span class="material-symbols-outlined text-xl">more_horiz</span>
+        </button>
+        <div class="item-action-menu">
+          <button type="button" data-action="edit">
+            <span class="material-symbols-outlined text-base">edit</span>
+            Düzenle
+          </button>
+          <button type="button" data-action="copy">
+            <span class="material-symbols-outlined text-base">content_copy</span>
+            Kopyala
+          </button>
+          <button class="delete-action" type="button" data-action="delete">
+            <span class="material-symbols-outlined text-base">delete</span>
+            Sil
+          </button>
+        </div>
+      `;
+    }
+
+    function enableActions(element, type) {
+      element.classList.add('managed-item');
+      element.dataset.itemType = type;
+
+      if (!element.querySelector('.item-more-btn')) {
+        element.insertAdjacentHTML('beforeend', buildActionMenu());
+      }
+    }
+
+    function createCourseCard(courseName, teacherName, courseTime) {
+      const card = document.createElement('div');
+      card.className = 'glass-card rounded-xl p-6 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10';
+      card.dataset.courseName = courseName;
+      card.dataset.teacherName = teacherName;
+      card.dataset.courseTime = courseTime;
+      card.innerHTML = `
+        <div class="mb-4 flex items-start justify-between pr-9">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container text-primary">
+            <span class="material-symbols-outlined">menu_book</span>
+          </div>
+          <input class="h-6 w-6 rounded border-purple-200 text-primary focus:ring-primary" type="checkbox" />
+        </div>
+        <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-primary">Yeni Ders</span>
+        <h4 class="item-title mt-3 text-lg font-bold">${escapeHTML(courseName)}</h4>
+        <p class="item-subtitle text-sm text-slate-500">${escapeHTML(teacherName)}</p>
+        <div class="mt-4 flex items-center gap-2 border-t border-purple-50 pt-4 text-sm text-slate-500">
+          <span class="material-symbols-outlined text-base">calendar_month</span>
+          <span class="item-detail">${escapeHTML(courseTime)}</span>
+        </div>
+      `;
+      enableActions(card, 'course');
+      return card;
+    }
+
+    function createExamCard(lesson, date, time, note) {
+      const card = document.createElement('div');
+      card.className = 'rounded-xl border border-purple-100 bg-white p-6 shadow-sm shadow-purple-500/5';
+      card.dataset.lesson = lesson;
+      card.dataset.date = date;
+      card.dataset.time = time;
+      card.dataset.note = note || 'Sınav';
+      card.innerHTML = `
+        <div class="mb-6 flex items-start gap-4 pr-9">
+          <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-purple-50 text-primary">
+            <span class="material-symbols-outlined text-3xl">assignment</span>
+          </div>
+          <div>
+            <h4 class="item-title text-xl font-bold">${escapeHTML(lesson)}</h4>
+            <p class="item-subtitle text-sm text-slate-500">${escapeHTML(note || 'Sınav')}</p>
+          </div>
+        </div>
+        <div class="space-y-2 text-sm text-slate-600">
+          <p class="flex items-center gap-2"><span class="material-symbols-outlined text-base">calendar_month</span><span class="item-date">${escapeHTML(date)}</span></p>
+          <p class="flex items-center gap-2"><span class="material-symbols-outlined text-base">schedule</span><span class="item-time">${escapeHTML(time)}</span></p>
+        </div>
+      `;
+      enableActions(card, 'exam');
+      return card;
+    }
+
+    function createProgramItem(title, hour, desc) {
+      const item = document.createElement('li');
+      item.className = 'flex items-start gap-3 rounded-lg p-3 hover:bg-surface-container-low';
+      item.dataset.title = title;
+      item.dataset.hour = hour || 'Saat yok';
+      item.dataset.desc = desc || '';
+      item.innerHTML = `
+        <input class="mt-1 rounded border-purple-300 text-secondary focus:ring-secondary" type="checkbox" />
+        <div class="pr-9">
+          <p class="item-title text-sm font-bold">${escapeHTML(title)}</p>
+          <p class="item-detail text-xs text-slate-500">${escapeHTML(hour || 'Saat yok')}${desc ? ' • ' + escapeHTML(desc) : ''}</p>
+        </div>
+      `;
+      enableActions(item, 'program');
+      return item;
+    }
+
+
+    function textWithoutIcons(element) {
+      if (!element) return '';
+      const clone = element.cloneNode(true);
+      clone.querySelectorAll('.material-symbols-outlined').forEach((icon) => icon.remove());
+      return clone.textContent.trim();
+    }
+
+    function prepareStaticCourseCards() {
+      document.querySelectorAll('#courseList > div').forEach((card) => {
+        if (card.classList.contains('managed-item')) return;
+
+        const title = card.querySelector('h4');
+        const subtitle = card.querySelector('p');
+        const detail = card.querySelector('div.mt-4 span:last-child');
+
+        if (title) title.classList.add('item-title');
+        if (subtitle) subtitle.classList.add('item-subtitle');
+        if (detail) detail.classList.add('item-detail');
+
+        card.dataset.courseName = title ? title.textContent.trim() : 'Ders';
+        card.dataset.teacherName = subtitle ? subtitle.textContent.trim() : 'Öğretmen';
+        card.dataset.courseTime = detail ? detail.textContent.trim() : 'Saat yok';
+
+        const topRow = card.querySelector('.mb-4.flex');
+        if (topRow) topRow.classList.add('pr-9');
+
+        enableActions(card, 'course');
+      });
+    }
+
+    function prepareStaticExamCards() {
+      document.querySelectorAll('#examList > div').forEach((card) => {
+        if (card.classList.contains('managed-item')) return;
+
+        const title = card.querySelector('h4');
+        const subtitle = card.querySelector('h4 + p');
+        const infoRows = card.querySelectorAll('.space-y-2 p');
+        const dateRow = infoRows[0];
+        const timeRow = infoRows[1];
+
+        if (title) title.classList.add('item-title');
+        if (subtitle) subtitle.classList.add('item-subtitle');
+
+        let dateText = textWithoutIcons(dateRow);
+        let timeText = textWithoutIcons(timeRow);
+
+        if (dateRow && !dateRow.querySelector('.item-date')) {
+          const icon = dateRow.querySelector('.material-symbols-outlined');
+          dateRow.innerHTML = '';
+          if (icon) dateRow.appendChild(icon);
+          const span = document.createElement('span');
+          span.className = 'item-date';
+          span.textContent = dateText;
+          dateRow.appendChild(span);
+        }
+
+        if (timeRow && !timeRow.querySelector('.item-time')) {
+          const icon = timeRow.querySelector('.material-symbols-outlined');
+          timeRow.innerHTML = '';
+          if (icon) timeRow.appendChild(icon);
+          const span = document.createElement('span');
+          span.className = 'item-time';
+          span.textContent = timeText;
+          timeRow.appendChild(span);
+        }
+
+        card.dataset.lesson = title ? title.textContent.trim() : 'Sınav';
+        card.dataset.note = subtitle ? subtitle.textContent.trim() : 'Sınav';
+        card.dataset.date = dateText || 'Tarih yok';
+        card.dataset.time = timeText || 'Saat yok';
+
+        const head = card.querySelector('.mb-6.flex');
+        if (head) head.classList.add('pr-9');
+
+        enableActions(card, 'exam');
+      });
+    }
+
+    function prepareStaticProgramItems() {
+      document.querySelectorAll('.program-list > li').forEach((item) => {
+        if (item.classList.contains('managed-item')) return;
+
+        const title = item.querySelector('p:first-of-type');
+        const detail = item.querySelector('p:nth-of-type(2)');
+
+        if (title) title.classList.add('item-title');
+        if (detail) detail.classList.add('item-detail');
+
+        const detailText = detail ? detail.textContent.trim() : '';
+        const splitIndex = detailText.indexOf('•');
+        const hour = splitIndex >= 0 ? detailText.slice(0, splitIndex).trim() : detailText;
+        const desc = splitIndex >= 0 ? detailText.slice(splitIndex + 1).trim() : '';
+
+        item.dataset.title = title ? title.textContent.trim() : 'Etkinlik';
+        item.dataset.hour = hour || 'Saat yok';
+        item.dataset.desc = desc;
+
+        const textBox = title ? title.parentElement : null;
+        if (textBox) textBox.classList.add('pr-9');
+
+        enableActions(item, 'program');
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        setProgramCompleted(item, checkbox ? checkbox.checked : false);
+      });
+    }
+
+
+    function setProgramCompleted(item, completed) {
+      if (!item) return;
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      const title = item.querySelector('.item-title');
+
+      if (checkbox) checkbox.checked = completed;
+      item.dataset.completed = completed ? 'true' : 'false';
+      if (title) {
+        title.classList.toggle('line-through', completed);
+        title.classList.toggle('text-secondary', completed);
+        title.classList.toggle('text-on-surface', !completed);
+      }
+      updateProgramTaskCounts();
+    }
+
+    function setupProgramCompletionState() {
+      document.querySelectorAll('.program-list > .managed-item').forEach((item) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        setProgramCompleted(item, checkbox ? checkbox.checked : item.dataset.completed === 'true');
+      });
+      updateProgramTaskCounts();
+    }
+
+    function ensureDayCountBadge(dayCard) {
+      const headerRow = dayCard.querySelector('h3')?.parentElement;
+      if (!headerRow) return null;
+      headerRow.classList.add('flex', 'items-center', 'justify-between');
+
+      let badge = dayCard.querySelector('.day-task-count');
+      if (!badge) {
+        badge = [...headerRow.children].find((child) => child.tagName === 'SPAN');
+      }
+      if (!badge) {
+        badge = document.createElement('span');
+        headerRow.appendChild(badge);
+      }
+      badge.className = 'day-task-count rounded bg-purple-100 px-2 py-1 text-xs font-bold text-primary';
+      return badge;
+    }
+
+    function updateProgramTaskCounts() {
+      document.querySelectorAll('.day-card').forEach((dayCard) => {
+        const items = dayCard.querySelectorAll('.program-list > .managed-item');
+        const completedItems = dayCard.querySelectorAll('.program-list > .managed-item[data-completed="true"]');
+        const badge = ensureDayCountBadge(dayCard);
+        if (!badge) return;
+
+        const total = items.length;
+        const completed = completedItems.length;
+        badge.textContent = total + ' Görev' + (total > 0 ? ' • ' + completed + ' Tamamlandı' : '');
+      });
+    }
+
+    function normalizeSearchText(value) {
+      return (value || '').toLocaleLowerCase('tr-TR').trim();
+    }
+
+    function getPageName(pageId) {
+      const names = {
+        dersler: 'Dersler',
+        sinavlar: 'Sınavlar',
+        program: 'Program',
+        takvim: 'Takvim'
+      };
+      return names[pageId] || pageId;
+    }
+
+    function getSearchIndex() {
+      const results = [];
+
+      document.querySelectorAll('.managed-item').forEach((item) => {
+        const type = item.dataset.itemType;
+        const page = item.closest('.page');
+        if (!page) return;
+
+        let title = '';
+        let description = '';
+        let location = getPageName(page.id);
+
+        if (type === 'course') {
+          title = item.dataset.courseName || item.querySelector('.item-title')?.textContent.trim() || 'Ders';
+          const teacher = item.dataset.teacherName || item.querySelector('.item-subtitle')?.textContent.trim() || '';
+          const time = item.dataset.courseTime || item.querySelector('.item-detail')?.textContent.trim() || '';
+          const listName = item.closest('#completedCourseList') ? 'Tamamlanan Dersler' : 'Aktif Derslerim';
+          location = 'Dersler > ' + listName;
+          description = [teacher, time].filter(Boolean).join(' • ');
+        }
+
+        if (type === 'exam') {
+          title = item.dataset.lesson || item.querySelector('.item-title')?.textContent.trim() || 'Sınav';
+          const note = item.dataset.note || item.querySelector('.item-subtitle')?.textContent.trim() || '';
+          const date = item.dataset.date || item.querySelector('.item-date')?.textContent.trim() || '';
+          const time = item.dataset.time || item.querySelector('.item-time')?.textContent.trim() || '';
+          location = 'Sınavlar > Sınav Takvimi';
+          description = [note, date, time].filter(Boolean).join(' • ');
+        }
+
+        if (type === 'program') {
+          title = item.dataset.title || item.querySelector('.item-title')?.textContent.trim() || 'Etkinlik';
+          const day = item.closest('.day-card')?.dataset.day || '';
+          const hour = item.dataset.hour || '';
+          const desc = item.dataset.desc || '';
+          location = 'Program > Haftalık Çalışma Programı' + (day ? ' > ' + day : '');
+          description = [hour, desc].filter(Boolean).join(' • ');
+        }
+
+        results.push({
+          title,
+          description,
+          location,
+          pageId: page.id,
+          element: item,
+          haystack: normalizeSearchText([title, description, location, item.textContent].join(' '))
+        });
+      });
+
+      document.querySelectorAll('#takvim .calendar-grid > div > div').forEach((eventBox) => {
+        const title = eventBox.textContent.trim();
+        if (!title) return;
+        const dayCell = eventBox.closest('.h-36');
+        const dayNumber = dayCell?.querySelector('span.font-bold')?.textContent.trim() || '';
+        const location = 'Takvim > Mayıs 2026' + (dayNumber ? ' > ' + dayNumber + '. gün' : '');
+        results.push({
+          title,
+          description: 'Takvim üzerinde işaretlenmiş ders veya sınav kaydı',
+          location,
+          pageId: 'takvim',
+          element: eventBox,
+          haystack: normalizeSearchText([title, location].join(' '))
+        });
+      });
+
+      return results;
+    }
+
+    function hideSearchResults() {
+      if (!searchResultsBox) return;
+      searchResultsBox.classList.add('hidden');
+      searchResultsBox.innerHTML = '';
+    }
+
+    function clearSearchHighlights() {
+      document.querySelectorAll('.search-focus-highlight').forEach((item) => {
+        item.classList.remove('search-focus-highlight', 'ring-4', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
+      });
+    }
+
+    function renderSearchResults() {
+      if (!globalSearchInput || !searchResultsBox) return;
+
+      const term = normalizeSearchText(globalSearchInput.value);
+      clearSearchHighlights();
+
+      if (!term) {
+        hideSearchResults();
+        return;
+      }
+
+      lastSearchResults = getSearchIndex()
+        .filter((item) => item.haystack.includes(term))
+        .slice(0, 10);
+
+      searchResultsBox.classList.remove('hidden');
+
+      if (lastSearchResults.length === 0) {
+        searchResultsBox.innerHTML = `
+          <div class="px-4 py-3 text-sm text-slate-500">
+            <p class="font-semibold text-slate-700">Sonuç bulunamadı</p>
+            <p class="mt-1">Aradığın ifade derslerde, sınavlarda, programda veya takvimde yok.</p>
+          </div>
+        `;
+        return;
+      }
+
+      searchResultsBox.innerHTML = lastSearchResults.map((result, index) => `
+        <button class="w-full rounded-xl px-4 py-3 text-left transition hover:bg-purple-50" type="button" data-search-index="${index}">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-bold text-on-surface">${escapeHTML(result.title)}</p>
+              <p class="mt-1 text-xs text-slate-500">${escapeHTML(result.description || 'Açıklama yok')}</p>
+              <p class="mt-1 text-xs font-semibold text-primary">Nerede var: ${escapeHTML(result.location)}</p>
+            </div>
+            <span class="material-symbols-outlined text-primary">arrow_forward</span>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    function openSearchResult(index) {
+      const result = lastSearchResults[index];
+      if (!result) return;
+
+      switchToPage(result.pageId);
+
+      if (result.pageId === 'dersler') {
+        if (result.element.closest('#completedCourseList')) {
+          showCourseView('completed');
+        } else {
+          showCourseView('active');
+        }
+      }
+
+      hideSearchResults();
+      clearSearchHighlights();
+
+      setTimeout(() => {
+        result.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        result.element.classList.add('search-focus-highlight', 'ring-4', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
+        setTimeout(() => {
+          result.element.classList.remove('search-focus-highlight', 'ring-4', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
+        }, 1800);
+      }, 120);
+    }
+
+    function applyGlobalSearch() {
+      renderSearchResults();
+    }
+
+    function prepareExistingItems() {
+      prepareStaticCourseCards();
+      prepareStaticExamCards();
+      prepareStaticProgramItems();
+      setupCourseCompletionState();
+      setupProgramCompletionState();
+    }
+
+    function getCourseCheckbox(card) {
+      return card ? card.querySelector('input[type="checkbox"]') : null;
+    }
+
+    function updateCompletedCourseCount() {
+      const completedCount = document.querySelectorAll('#completedCourseList > .managed-item').length;
+      const activeCount = document.querySelectorAll('#courseList > .managed-item').length;
+      const totalCount = completedCount + activeCount;
+      const percent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
+
+      const countText = document.getElementById('completedCourseCount');
+      const progressBar = document.getElementById('courseProgressBar');
+      const progressPercent = document.getElementById('courseProgressPercent');
+      const progressTitle = document.getElementById('courseProgressTitle');
+
+      if (countText) countText.textContent = completedCount + ' Tamamlandı';
+      if (progressBar) progressBar.style.width = percent + '%';
+      if (progressPercent) progressPercent.textContent = percent + '%';
+      if (progressTitle) progressTitle.textContent = completedCount + ' / ' + totalCount + ' ders tamamlandı';
+    }
+
+    function showCourseView(view) {
+      const activeList = document.getElementById('courseList');
+      const completedList = document.getElementById('completedCourseList');
+      const emptyMessage = document.getElementById('completedEmptyMessage');
+      const title = document.getElementById('courseSectionTitle');
+      const backButton = document.getElementById('showActiveCourses');
+      const completedCount = completedList ? completedList.children.length : 0;
+
+      if (view === 'completed') {
+        activeList.classList.add('hidden');
+        completedList.classList.remove('hidden');
+        emptyMessage.classList.toggle('hidden', completedCount !== 0);
+        title.textContent = 'Tamamlanan Dersler';
+        backButton.classList.remove('hidden');
+        return;
+      }
+
+      activeList.classList.remove('hidden');
+      completedList.classList.add('hidden');
+      emptyMessage.classList.add('hidden');
+      title.textContent = 'Aktif Derslerim';
+      backButton.classList.add('hidden');
+    }
+
+    function setCourseCompleted(card, completed, shouldSwitchView = false) {
+      if (!card) return;
+
+      const checkbox = getCourseCheckbox(card);
+      const title = card.querySelector('.item-title');
+      const completedList = document.getElementById('completedCourseList');
+      const activeList = document.getElementById('courseList');
+
+      card.dataset.completed = completed ? 'true' : 'false';
+      if (checkbox) checkbox.checked = completed;
+      if (title) title.classList.toggle('line-through', completed);
+      card.classList.toggle('opacity-80', completed);
+
+      let statusBadge = card.querySelector('.course-status-badge');
+      if (completed) {
+        if (!statusBadge) {
+          statusBadge = document.createElement('span');
+          statusBadge.className = 'course-status-badge ml-2 rounded-full bg-secondary-container px-3 py-1 text-xs font-bold text-secondary';
+          statusBadge.textContent = 'Tamamlandı';
+          const tag = card.querySelector('span.rounded-full');
+          if (tag) tag.after(statusBadge);
+        }
+        completedList.prepend(card);
+      } else {
+        if (statusBadge) statusBadge.remove();
+        activeList.prepend(card);
+      }
+
+      updateCompletedCourseCount();
+
+      if (shouldSwitchView && !completed) {
+        showCourseView('active');
+      } else if (!document.getElementById('completedCourseList').classList.contains('hidden')) {
+        showCourseView('completed');
+      }
+    }
+
+    function setupCourseCompletionState() {
+      document.querySelectorAll('#courseList > .managed-item, #completedCourseList > .managed-item').forEach((card) => {
+        const checkbox = getCourseCheckbox(card);
+        setCourseCompleted(card, checkbox ? checkbox.checked : card.dataset.completed === 'true');
+      });
+      showCourseView('active');
+      updateCompletedCourseCount();
+    }
+
+    document.getElementById('showCompletedCourses').addEventListener('click', function () {
+      showCourseView('completed');
+    });
+
+    document.getElementById('showActiveCourses').addEventListener('click', function () {
+      showCourseView('active');
+    });
+
+    document.addEventListener('change', function (e) {
+      const checkbox = e.target.closest('input[type="checkbox"]');
+      if (!checkbox) return;
+
+      const courseCard = checkbox.closest('.managed-item[data-item-type="course"]');
+      if (courseCard) {
+        setCourseCompleted(courseCard, checkbox.checked, false);
+        applyGlobalSearch();
+        return;
+      }
+
+      const programItem = checkbox.closest('.managed-item[data-item-type="program"]');
+      if (programItem) {
+        setProgramCompleted(programItem, checkbox.checked);
+        applyGlobalSearch();
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      const moreButton = e.target.closest('.item-more-btn');
+      const actionButton = e.target.closest('[data-action]');
+
+      if (moreButton) {
+        const item = moreButton.closest('.managed-item');
+        const wasOpen = item.classList.contains('menu-open');
+        closeAllMenus();
+        item.classList.toggle('menu-open', !wasOpen);
+        e.stopPropagation();
+        return;
+      }
+
+      if (actionButton) {
+        const item = actionButton.closest('.managed-item');
+        const action = actionButton.dataset.action;
+        const type = item.dataset.itemType;
+
+        if (action === 'delete') {
+          item.remove();
+          if (type === 'course') updateCompletedCourseCount();
+          if (type === 'program') updateProgramTaskCounts();
+          applyGlobalSearch();
+        }
+
+        if (action === 'copy') {
+          let copy;
+          if (type === 'course') {
+            copy = createCourseCard(item.dataset.courseName, item.dataset.teacherName, item.dataset.courseTime);
+          }
+          if (type === 'exam') {
+            copy = createExamCard(item.dataset.lesson, item.dataset.date, item.dataset.time, item.dataset.note);
+          }
+          if (type === 'program') {
+            copy = createProgramItem(item.dataset.title, item.dataset.hour, item.dataset.desc);
+          }
+          item.after(copy);
+          if (type === 'course') {
+            setCourseCompleted(copy, item.dataset.completed === 'true');
+          }
+          if (type === 'program') {
+            setProgramCompleted(copy, item.dataset.completed === 'true');
+            updateProgramTaskCounts();
+          }
+          applyGlobalSearch();
+        }
+
+        if (action === 'edit') {
+          if (type === 'course') {
+            const newCourseName = prompt('Ders adını düzenle:', item.dataset.courseName);
+            if (newCourseName === null) return closeAllMenus();
+            const newTeacherName = prompt('Öğretmen adını düzenle:', item.dataset.teacherName);
+            if (newTeacherName === null) return closeAllMenus();
+            const newCourseTime = prompt('Gün / saat bilgisini düzenle:', item.dataset.courseTime);
+            if (newCourseTime === null) return closeAllMenus();
+
+            item.dataset.courseName = newCourseName.trim() || item.dataset.courseName;
+            item.dataset.teacherName = newTeacherName.trim() || item.dataset.teacherName;
+            item.dataset.courseTime = newCourseTime.trim() || item.dataset.courseTime;
+            item.querySelector('.item-title').textContent = item.dataset.courseName;
+            item.querySelector('.item-subtitle').textContent = item.dataset.teacherName;
+            item.querySelector('.item-detail').textContent = item.dataset.courseTime;
+          }
+
+          if (type === 'exam') {
+            const newLesson = prompt('Ders adını düzenle:', item.dataset.lesson);
+            if (newLesson === null) return closeAllMenus();
+            const newNote = prompt('Açıklamayı düzenle:', item.dataset.note);
+            if (newNote === null) return closeAllMenus();
+            const newDate = prompt('Tarihi düzenle:', item.dataset.date);
+            if (newDate === null) return closeAllMenus();
+            const newTime = prompt('Saati düzenle:', item.dataset.time);
+            if (newTime === null) return closeAllMenus();
+
+            item.dataset.lesson = newLesson.trim() || item.dataset.lesson;
+            item.dataset.note = newNote.trim() || item.dataset.note;
+            item.dataset.date = newDate.trim() || item.dataset.date;
+            item.dataset.time = newTime.trim() || item.dataset.time;
+            item.querySelector('.item-title').textContent = item.dataset.lesson;
+            item.querySelector('.item-subtitle').textContent = item.dataset.note;
+            item.querySelector('.item-date').textContent = item.dataset.date;
+            item.querySelector('.item-time').textContent = item.dataset.time;
+          }
+
+          if (type === 'program') {
+            const newTitle = prompt('Ders/Etkinlik adını düzenle:', item.dataset.title);
+            if (newTitle === null) return closeAllMenus();
+            const newHour = prompt('Saati düzenle:', item.dataset.hour);
+            if (newHour === null) return closeAllMenus();
+            const newDesc = prompt('Açıklamayı düzenle:', item.dataset.desc);
+            if (newDesc === null) return closeAllMenus();
+
+            item.dataset.title = newTitle.trim() || item.dataset.title;
+            item.dataset.hour = newHour.trim() || item.dataset.hour;
+            item.dataset.desc = newDesc.trim();
+            item.querySelector('.item-title').textContent = item.dataset.title;
+            item.querySelector('.item-detail').textContent = item.dataset.hour + (item.dataset.desc ? ' • ' + item.dataset.desc : '');
+          }
+        }
+
+        if (type === 'program') updateProgramTaskCounts();
+        applyGlobalSearch();
+        closeAllMenus();
+        e.stopPropagation();
+        return;
+      }
+
+      closeAllMenus();
+    });
+
+    prepareExistingItems();
+    updateProgramTaskCounts();
+
+    globalSearchInput.addEventListener('input', renderSearchResults);
+
+    searchResultsBox.addEventListener('click', function (e) {
+      const resultButton = e.target.closest('[data-search-index]');
+      if (!resultButton) return;
+      openSearchResult(Number(resultButton.dataset.searchIndex));
+    });
+
+    document.getElementById('courseForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const courseName = document.getElementById('courseName').value.trim();
+      const teacherName = document.getElementById('teacherName').value.trim();
+      const courseTime = document.getElementById('courseTime').value.trim();
+
+      if (!courseName || !teacherName || !courseTime) return;
+
+      document.getElementById('courseList').prepend(createCourseCard(courseName, teacherName, courseTime));
+      updateCompletedCourseCount();
+      applyGlobalSearch();
+      this.reset();
+    });
+
+    document.getElementById('examForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const lesson = document.getElementById('examLesson').value.trim();
+      const date = document.getElementById('examDate').value;
+      const time = document.getElementById('examTime').value;
+      const note = document.getElementById('examNote').value.trim();
+
+      if (!lesson || !date || !time) return;
+
+      document.getElementById('examList').prepend(createExamCard(lesson, date, time, note));
+      applyGlobalSearch();
+      this.reset();
+    });
+
+    document.querySelectorAll('.program-form').forEach((form) => {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const title = this.querySelector('.program-title').value.trim();
+        const hour = this.querySelector('.program-hour').value.trim();
+        const desc = this.querySelector('.program-desc').value.trim();
+
+        if (!title) return;
+
+        const list = this.parentElement.querySelector('.program-list');
+        list.prepend(createProgramItem(title, hour, desc));
+        updateProgramTaskCounts();
+        applyGlobalSearch();
+        this.reset();
+      });
+    });
+
+    const settingsButton = document.getElementById('settingsButton');
+    const settingsMenu = document.getElementById('settingsMenu');
+    const openAccountEdit = document.getElementById('openAccountEdit');
+    const accountModal = document.getElementById('accountModal');
+    const closeAccountModal = document.getElementById('closeAccountModal');
+    const accountForm = document.getElementById('accountForm');
+    const accountNameInput = document.getElementById('accountNameInput');
+    const accountFacultyInput = document.getElementById('accountFacultyInput');
+    const profileName = document.getElementById('profileName');
+    const profileFaculty = document.getElementById('profileFaculty');
+    const profileAvatar = document.getElementById('profileAvatar');
+
+    function updateAvatarInitials(fullName) {
+      const parts = fullName.trim().split(/\s+/).filter(Boolean);
+      const initials = parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : (parts[0]?.slice(0, 2) || 'İG').toUpperCase();
+      profileAvatar.textContent = initials;
+    }
+
+    settingsButton.addEventListener('click', function (e) {
+      settingsMenu.classList.toggle('hidden');
+      e.stopPropagation();
+    });
+
+    openAccountEdit.addEventListener('click', function (e) {
+      accountNameInput.value = profileName.textContent.trim();
+      accountFacultyInput.value = profileFaculty.textContent.trim();
+      accountModal.classList.remove('hidden');
+      accountModal.classList.add('flex');
+      settingsMenu.classList.add('hidden');
+      e.stopPropagation();
+    });
+
+    closeAccountModal.addEventListener('click', function () {
+      accountModal.classList.add('hidden');
+      accountModal.classList.remove('flex');
+    });
+
+    accountModal.addEventListener('click', function (e) {
+      if (e.target === accountModal) {
+        accountModal.classList.add('hidden');
+        accountModal.classList.remove('flex');
+      }
+    });
+
+    accountForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const newName = accountNameInput.value.trim();
+      const newFaculty = accountFacultyInput.value.trim();
+
+      if (newName) {
+        profileName.textContent = newName;
+        updateAvatarInitials(newName);
+      }
+
+      if (newFaculty) {
+        profileFaculty.textContent = newFaculty;
+      }
+
+      accountModal.classList.add('hidden');
+      accountModal.classList.remove('flex');
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('#settingsButton') && !e.target.closest('#settingsMenu')) {
+        settingsMenu.classList.add('hidden');
+      }
+
+      if (!e.target.closest('#globalSearch') && !e.target.closest('#searchResults')) {
+        hideSearchResults();
+      }
+    });
+
+    globalSearchInput.addEventListener('focus', renderSearchResults);
+  </script>
+</body>
+</html>
