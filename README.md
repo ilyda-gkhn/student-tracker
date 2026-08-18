@@ -2,7 +2,9 @@
 🔗 [Canlı demoyu görüntüle](https://ilyda-gkhn.github.io/student-tracker/)
 
 Academic Zen; dersleri, sınavları ve haftalık çalışma programını tek bir arayüzden takip etmek için hazırlanmış tarayıcı tabanlı bir öğrenci planlama uygulamasıdır.
+## Ekran Görüntüsü
 
+![Academic Zen haftalık çalışma programı](assets/academic-zen-program.png)
 ## Özellikler
 
 - Ders ekleme, düzenleme, kopyalama ve silme
